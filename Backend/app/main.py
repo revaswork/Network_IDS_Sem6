@@ -1,4 +1,53 @@
-from fastapi import FastAPI
+# from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+
+# from app.schemas import NetworkData
+# from app.predictor import predict
+# from app.simulator import generate_packet
+
+# app = FastAPI(title="NIDS Backend 🚨")
+
+# # -----------------------------
+# # ✅ CORS CONFIG (IMPORTANT)
+# # -----------------------------
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],  # allow React frontend
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# # -----------------------------
+# # 📌 Health Check
+# # -----------------------------
+# @app.get("/")
+# def home():
+#     return {"message": "NIDS Backend Running 🚀"}
+
+
+# # -----------------------------
+# # 📌 Predict Endpoint
+# # -----------------------------
+# @app.post("/predict")
+# def predict_endpoint(input_data: NetworkData):
+#     try:
+#         return predict(input_data.data)
+#     except Exception as e:
+#         return {"error": str(e)}
+
+
+# # -----------------------------
+# # 📌 Simulation Endpoint
+# # -----------------------------
+# @app.get("/simulate")
+# def simulate():
+#     try:
+#         return generate_packet()
+#     except Exception as e:
+#         return {"error": str(e)}
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas import NetworkData
@@ -7,42 +56,35 @@ from app.simulator import generate_packet
 
 app = FastAPI(title="NIDS Backend 🚨")
 
-# -----------------------------
-# ✅ CORS CONFIG (IMPORTANT)
-# -----------------------------
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow React frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------
-# 📌 Health Check
-# -----------------------------
+# Health Check
 @app.get("/")
 def home():
-    return {"message": "NIDS Backend Running 🚀"}
+    return {
+        "message": "NIDS Backend Running 🚀",
+        "status": "ok"
+    }
 
-
-# -----------------------------
-# 📌 Predict Endpoint
-# -----------------------------
+# Predict
 @app.post("/predict")
 def predict_endpoint(input_data: NetworkData):
     try:
         return predict(input_data.data)
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# -----------------------------
-# 📌 Simulation Endpoint
-# -----------------------------
+# Simulate
 @app.get("/simulate")
 def simulate():
     try:
         return generate_packet()
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
