@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell } from "recharts";
@@ -11,16 +11,22 @@ function App() {
     attack: 0,
   });
 
+  const started = useRef(false); // 🚨 prevents double loop
   const DURATION = 5;
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+
     runSimulation();
   }, []);
 
   const runSimulation = async () => {
     while (true) {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/simulate");
+        const res = await axios.get(
+          "https://network-ids-sem6.onrender.com/simulate"
+        );
 
         const pkt = {
           id: Date.now(),
@@ -29,20 +35,20 @@ function App() {
           confidence: res.data.confidence,
         };
 
-        // UPDATE STATS
+        // 🚀 show packet first
+        setPackets([pkt]);
+
+        // 🚀 wait for animation
+        await sleep(DURATION * 1000);
+
+        // 🚀 update stats AFTER reaching server
         if (pkt.prediction === "Normal") {
           setStats((prev) => ({ ...prev, normal: prev.normal + 1 }));
         } else {
           setStats((prev) => ({ ...prev, attack: prev.attack + 1 }));
         }
 
-        // SHOW PACKET
-        setPackets([pkt]);
-
-        // WAIT till reaches server
-        await sleep(DURATION * 1000);
-
-        // LOG AFTER DETECTION
+        // 🚀 update logs AFTER detection
         setLogs((prev) => [
           {
             time: new Date().toLocaleTimeString(),
@@ -64,9 +70,7 @@ function App() {
     <div style={container}>
       <h1>🚨 NIDS Live Monitoring</h1>
 
-      {/* NETWORK */}
       <div style={networkStyle}>
-        
         {/* INTERNET */}
         <div style={internetStyle}>🌐</div>
 
@@ -75,7 +79,9 @@ function App() {
 
         {/* PIE CHART */}
         <div style={pieContainer}>
-          <h4 style={{ textAlign: "center", marginBottom: "5px" }}>Traffic</h4>
+          <h4 style={{ textAlign: "center", marginBottom: "5px" }}>
+            Traffic
+          </h4>
 
           <PieChart width={180} height={180}>
             <Pie
@@ -99,7 +105,7 @@ function App() {
           <motion.div
             key={pkt.id}
             initial={{ x: 120 }}
-            animate={{ x: 720 }} // adjusted for new layout
+            animate={{ x: 600 }}
             transition={{ duration: DURATION }}
             style={packetStyle}
           >
@@ -108,7 +114,13 @@ function App() {
               animate={{
                 opacity: 1,
                 background:
-                  pkt.prediction === "Normal" ? "#22c55e" : "#ef4444",
+                  pkt.prediction === "Normal"
+                    ? "#22c55e"
+                    : "#ef4444",
+                boxShadow:
+                  pkt.prediction === "Normal"
+                    ? "0 0 10px #22c55e"
+                    : "0 0 10px #ef4444",
               }}
               transition={{ delay: DURATION - 0.2 }}
               style={innerPacket}
@@ -134,7 +146,12 @@ function App() {
           {logs.map((log, i) => (
             <tr key={i}>
               <td>{log.time}</td>
-              <td style={{ color: log.prediction === "Normal" ? "lime" : "red" }}>
+              <td
+                style={{
+                  color:
+                    log.prediction === "Normal" ? "lime" : "red",
+                }}
+              >
                 {log.prediction}
               </td>
               <td>{log.actual}</td>
@@ -183,7 +200,7 @@ const internetStyle = {
 
 const serverStyle = {
   position: "absolute",
-  right: "300px", // ✅ shifted left (fix overlap)
+  right: "260px",
   top: "100px",
   width: "100px",
   height: "100px",
@@ -198,7 +215,7 @@ const serverStyle = {
 
 const pieContainer = {
   position: "absolute",
-  right: "40px", // ✅ stays right
+  right: "40px",
   top: "60px",
   width: "200px",
   height: "200px",
@@ -206,7 +223,6 @@ const pieContainer = {
   borderRadius: "20px",
   padding: "10px",
   backdropFilter: "blur(10px)",
-  boxShadow: "0 0 20px rgba(255,255,255,0.1)",
 };
 
 const packetStyle = {
